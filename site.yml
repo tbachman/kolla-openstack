@@ -1,0 +1,132 @@
+---
+# site.yml — Optional Ansible playbook wrapper around kolla-ansible.
+# Useful when you want to integrate kolla-ansible into a larger Ansible
+# pipeline or add pre/post tasks around the deployment.
+#
+# Usage:
+#   ansible-playbook -i inventory/all-in-one site.yml
+#   ansible-playbook -i inventory/multinode site.yml -e stage=deploy
+
+- name: Pre-flight checks and OS hardening
+  hosts: baremetal
+  become: true
+  gather_facts: true
+  vars:
+    stage: "{{ stage | default('all') }}"
+
+  pre_tasks:
+    - name: Verify Ubuntu 22.04
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version is version("22.04", ">=")
+        fail_msg: >-
+          This playbook requires Ubuntu 22.04 or later.
+          Found: {{ ansible_distribution }} {{ ansible_distribution_version }}
+
+    - name: Ensure hostname resolves to an IP (not 127.0.0.1)
+      ansible.builtin.command: hostname -I
+      register: host_ips
+      changed_when: false
+
+    - name: Warn if hostname resolves only to loopback
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: hostname -I returned "{{ host_ips.stdout }}" — make sure
+          /etc/hosts maps the FQDN to a real interface IP, not 127.0.0.1.
+      when: host_ips.stdout | trim == "127.0.0.1"
+
+  roles: []   # Add your own site-specific roles here (e.g. ntp, sysctl)
+
+  tasks:
+    - name: Disable swap (required by kolla)
+      ansible.builtin.command: swapoff -a
+      changed_when: false
+
+    - name: Remove swap from /etc/fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\s+swap\s+.*)$'
+        replace: '# \1'
+
+    - name: Set vm.swappiness = 0
+      ansible.posix.sysctl:
+        name: vm.swappiness
+        value: "0"
+        state: present
+        reload: true
+
+    - name: Ensure Docker is not installed via snap (conflicts with kolla)
+      ansible.builtin.command: snap remove docker
+      ignore_errors: true
+      changed_when: false
+
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - python3
+          - python3-pip
+          - python3-venv
+          - python3-dev
+          - libffi-dev
+          - gcc
+          - libssl-dev
+          - build-essential
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Set /etc/hosts entry for this node
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ ansible_default_ipv4.address }}"
+        line: "{{ ansible_default_ipv4.address }} {{ ansible_fqdn }} {{ ansible_hostname }}"
+        state: present
+
+- name: Install and configure kolla-ansible on deployment host
+  hosts: deployment
+  become: true
+  gather_facts: false
+  vars:
+    kolla_venv: /opt/kolla-venv
+    kolla_branch: "2024.1"
+
+  tasks:
+    - name: Create kolla virtualenv
+      ansible.builtin.pip:
+        name:
+          - pip
+          - wheel
+        state: latest
+        virtualenv: "{{ kolla_venv }}"
+        virtualenv_command: python3 -m venv
+
+    - name: Install kolla-ansible in virtualenv
+      ansible.builtin.pip:
+        name:
+          - "kolla-ansible=={{ kolla_branch }}.*"
+          - "ansible-core>=2.16,<2.17"
+        virtualenv: "{{ kolla_venv }}"
+
+    - name: Install Ansible Galaxy collections
+      ansible.builtin.command: "{{ kolla_venv }}/bin/kolla-ansible install-deps"
+      changed_when: true
+
+    - name: Ensure /etc/kolla exists
+      ansible.builtin.file:
+        path: /etc/kolla
+        state: directory
+        mode: "0750"
+
+    - name: Copy globals.yml
+      ansible.builtin.copy:
+        src: globals.yml
+        dest: /etc/kolla/globals.yml
+        mode: "0640"
+
+    - name: Generate kolla passwords
+      ansible.builtin.command: "{{ kolla_venv }}/bin/kolla-genpwd"
+      args:
+        creates: /etc/kolla/passwords.yml
+      changed_when: true

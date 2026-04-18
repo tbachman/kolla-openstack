@@ -1,0 +1,154 @@
+# multinode inventory — distribute services across dedicated hosts.
+# Replace the placeholder IPs with your actual host addresses.
+# All hosts must be SSH-reachable from the deployment host.
+#
+# Minimal HA layout:
+#   3 × controller  (control, network, storage, monitoring)
+#   N × compute     (compute)
+
+[control]
+controller01  ansible_host=192.168.100.11 ansible_user=ubuntu ansible_become=true
+controller02  ansible_host=192.168.100.12 ansible_user=ubuntu ansible_become=true
+controller03  ansible_host=192.168.100.13 ansible_user=ubuntu ansible_become=true
+
+[network:children]
+control
+
+[storage:children]
+control
+
+[monitoring:children]
+control
+
+[compute]
+compute01     ansible_host=192.168.100.21 ansible_user=ubuntu ansible_become=true
+compute02     ansible_host=192.168.100.22 ansible_user=ubuntu ansible_become=true
+# add more compute nodes here
+
+[deployment]
+localhost     ansible_connection=local
+
+# ── Optional: dedicated storage nodes ────────────────────────────────────────
+# Uncomment and populate if you want separate Ceph OSD / Cinder-volume nodes.
+#[storage]
+#storage01    ansible_host=192.168.100.31 ansible_user=ubuntu ansible_become=true
+
+# ── Group composition — do not edit unless you know what you are doing ───────
+
+[baremetal:children]
+control
+network
+compute
+storage
+monitoring
+
+[haproxy:children]
+network
+
+[rabbitmq:children]
+control
+
+[mariadb:children]
+control
+
+[redis:children]
+control
+
+[memcached:children]
+control
+
+[etcd:children]
+control
+
+[keystone:children]
+control
+
+[glance:children]
+control
+
+[nova:children]
+control
+
+[nova-api:children]
+control
+
+[nova-conductor:children]
+control
+
+[nova-super-conductor:children]
+control
+
+[nova-novncproxy:children]
+control
+
+[nova-scheduler:children]
+control
+
+[nova-compute:children]
+compute
+
+[placement:children]
+control
+
+[neutron:children]
+control
+
+[neutron-server:children]
+control
+
+[neutron-dhcp-agent:children]
+network
+
+[neutron-l3-agent:children]
+network
+
+[neutron-metadata-agent:children]
+network
+
+[neutron-ovn-agent:children]
+compute
+
+[cinder:children]
+control
+
+[cinder-api:children]
+control
+
+[cinder-backup:children]
+storage
+
+[cinder-scheduler:children]
+control
+
+[cinder-volume:children]
+storage
+
+[horizon:children]
+control
+
+[heat:children]
+control
+
+[heat-api:children]
+control
+
+[heat-api-cfn:children]
+control
+
+[heat-engine:children]
+control
+
+[octavia:children]
+control
+
+[octavia-api:children]
+control
+
+[octavia-health-manager:children]
+network
+
+[octavia-housekeeping:children]
+control
+
+[octavia-worker:children]
+control
