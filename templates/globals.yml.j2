@@ -1,0 +1,68 @@
+kolla_base_distro: "{{ kolla_base_distro }}"
+kolla_install_type: "{{ kolla_install_type }}"
+openstack_release: "{{ kolla_openstack_release }}"
+
+network_interface: "{{ kolla_network_interface }}"
+neutron_external_interface: "{{ kolla_neutron_external_interface }}"
+kolla_internal_vip_address: "{{ kolla_internal_vip_address }}"
+
+enable_haproxy: "{{ 'yes' if kolla_enable_haproxy else 'no' }}"
+
+enable_mariadb: "yes"
+enable_rabbitmq: "yes"
+enable_memcached: "yes"
+
+enable_keystone: "{{ 'yes' if kolla_enable_keystone else 'no' }}"
+enable_glance: "{{ 'yes' if kolla_enable_glance else 'no' }}"
+enable_nova: "{{ 'yes' if kolla_enable_nova else 'no' }}"
+enable_neutron: "{{ 'yes' if kolla_enable_neutron else 'no' }}"
+enable_placement: "{{ 'yes' if kolla_enable_placement else 'no' }}"
+enable_horizon: "{{ 'yes' if kolla_enable_horizon else 'no' }}"
+enable_heat: "{{ 'yes' if kolla_enable_heat else 'no' }}"
+
+neutron_plugin_agent: "{{ kolla_neutron_plugin_agent }}"
+enable_openvswitch: "{{ 'yes' if kolla_enable_openvswitch else 'no' }}"
+enable_ovn: "{{ 'yes' if kolla_enable_ovn else 'no' }}"
+enable_neutron_provider_networks: "{{ 'yes' if kolla_enable_provider_networks else 'no' }}"
+neutron_physical_networks: "{{ kolla_neutron_physical_networks }}"
+neutron_network_vlan_ranges: "{{ kolla_neutron_network_vlan_ranges }}"
+neutron_type_drivers: "{{ kolla_neutron_type_drivers }}"
+neutron_tenant_network_types: "{{ kolla_neutron_tenant_network_types }}"
+
+enable_cinder: "{{ 'yes' if kolla_enable_cinder else 'no' }}"
+enable_ironic: "{{ 'yes' if kolla_enable_ironic else 'no' }}"
+enable_ironic_dnsmasq: "{{ 'yes' if kolla_enable_ironic_dnsmasq else 'no' }}"
+enable_octavia: "{{ 'yes' if kolla_enable_octavia else 'no' }}"
+{% if kolla_enable_cisco_ndfc %}
+
+enable_neutron_cisco_topology_agent: "yes"
+neutron_cisco_topology_agent_image: "{{ kolla_neutron_cisco_topology_agent_image }}"
+neutron_cisco_topology_agent_tag: "{{ kolla_neutron_cisco_topology_agent_tag }}"
+
+neutron_subprojects:
+{% for item in kolla_neutron_subprojects %}
+  - name: "{{ item.name }}"
+    enabled: {{ item.enabled | bool | lower }}
+{% endfor %}
+
+enable_neutron_ndfc: true
+
+neutron_ndfc_config:
+{% for key, value in kolla_ndfc_config.items() %}
+  {{ key }}: {{ value | to_json }}
+{% endfor %}
+
+neutron_server_image: "{{ kolla_neutron_server_image }}"
+neutron_server_tag: "{{ kolla_neutron_server_tag }}"
+
+neutron_mechanism_drivers:
+{% for item in kolla_neutron_mechanism_drivers %}
+  - name: {{ item.name }}
+{% endfor %}
+
+keystone_notification_topics:
+{% for item in kolla_keystone_notification_topics %}
+  - name: {{ item.name }}
+    enabled: {{ item.enabled | bool | lower }}
+{% endfor %}
+{% endif %}

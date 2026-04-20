@@ -1,0 +1,108 @@
+- name: Prepare Cisco NDFC overlay and optional Neutron image build
+  hosts: deployment
+  become: true
+  vars:
+    kolla_cisco_template_override_path: "/home/{{ kolla_deployer_user }}/template-overrides.j2"
+    kolla_proxy_env:
+      http_proxy: "{{ kolla_http_proxy }}"
+      https_proxy: "{{ kolla_https_proxy }}"
+      no_proxy: "{{ kolla_no_proxy | join(',') }}"
+      HTTP_PROXY: "{{ kolla_http_proxy }}"
+      HTTPS_PROXY: "{{ kolla_https_proxy }}"
+      NO_PROXY: "{{ kolla_no_proxy | join(',') }}"
+    kolla_runtime_env:
+      PATH: "{{ kolla_venv_path }}/bin:{{ ansible_env.PATH }}"
+      VIRTUAL_ENV: "{{ kolla_venv_path }}"
+      ANSIBLE_COLLECTIONS_PATH: "{{ kolla_ansible_collections_path }}"
+  tasks:
+    - name: Require explicit Cisco enablement
+      ansible.builtin.assert:
+        that:
+          - kolla_enable_cisco_ndfc | bool
+        fail_msg: "Set kolla_enable_cisco_ndfc: true before running the Cisco overlay playbook."
+
+    - name: Install kolla build tooling into the deployer venv
+      become: false
+      ansible.builtin.pip:
+        name:
+          - "kolla=={{ kolla_package_version }}"
+          - docker
+        virtualenv: "{{ kolla_venv_path }}"
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+
+    - name: Discover the venv site-packages path
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/python -c \"import sysconfig; print(sysconfig.get_path('purelib'))\""
+      register: kolla_venv_purelib
+      changed_when: false
+
+    - name: Render kolla-build.conf
+      ansible.builtin.template:
+        src: ../templates/kolla-build.conf.j2
+        dest: /etc/kolla/kolla-build.conf
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Render the neutron template override
+      become: false
+      ansible.builtin.template:
+        src: ../templates/template-overrides.j2.j2
+        dest: "{{ kolla_cisco_template_override_path }}"
+        mode: "0644"
+
+    - name: Create the topology agent docker template directory
+      become: false
+      ansible.builtin.file:
+        path: "{{ kolla_venv_path }}/share/kolla/docker/neutron/neutron-cisco-topology-agent"
+        state: directory
+        mode: "0755"
+
+    - name: Render the topology agent Dockerfile template
+      become: false
+      ansible.builtin.template:
+        src: ../templates/neutron-cisco-topology-agent.Dockerfile.j2
+        dest: "{{ kolla_venv_path }}/share/kolla/docker/neutron/neutron-cisco-topology-agent/Dockerfile.j2"
+        mode: "0644"
+
+    - name: Patch ml2_conf.ini.j2 for explicit VLAN ranges
+      become: false
+      ansible.builtin.replace:
+        path: "{{ kolla_venv_path }}/share/kolla-ansible/ansible/roles/neutron/templates/ml2_conf.ini.j2"
+        regexp: |
+          \[ml2_type_vlan\]\n\{% if enable_ironic \| bool %\}\nnetwork_vlan_ranges = \{\{ neutron_physical_networks \}\}\n\{% else %\}\nnetwork_vlan_ranges =\n\{% endif %\}
+        replace: |
+          [ml2_type_vlan]
+          network_vlan_ranges = {{ neutron_network_vlan_ranges }}
+
+    - name: Register the Cisco topology agent source in kolla/common/sources.py
+      become: false
+      ansible.builtin.blockinfile:
+        path: "{{ kolla_venv_purelib.stdout }}/kolla/common/sources.py"
+        marker: "    # {mark} neutron-cisco-topology-agent"
+        insertbefore: "    'neutron-vpnaas-agent': {"
+        block: |
+          'neutron-cisco-topology-agent': {
+              'type': 'url',
+              'location': ('$tarballs_base/openstack/networking-cisco/'
+                           'networking-cisco-${openstack_branch}.tar.gz')},
+
+    - name: List candidate neutron images
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-build --list-images"
+      register: kolla_image_list
+      changed_when: false
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+
+    - name: Show whether the Cisco topology image is recognized
+      ansible.builtin.debug:
+        msg: "{{ kolla_image_list.stdout_lines | select('search', 'neutron-(cisco-topology-agent|server)') | list }}"
+
+    - name: Build the Neutron images when explicitly requested
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-build -b {{ kolla_base_distro }} --template-override {{ kolla_cisco_template_override_path }} neutron"
+      when: kolla_cisco_build_images | bool
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
