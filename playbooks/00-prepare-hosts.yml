@@ -96,6 +96,24 @@
         - kolla_cleanup_openvswitch_runtime | bool
       failed_when: false
 
+    - name: Check for running Kolla Open vSwitch containers
+      ansible.builtin.command:
+        cmd: "docker ps --format {{ '{{.Names}}' }}"
+      register: kolla_running_docker_containers
+      changed_when: false
+      failed_when: false
+      when:
+        - kolla_cleanup_openvswitch_runtime | bool
+
+    - name: Refuse OVS runtime cleanup while Kolla OVS containers are running
+      ansible.builtin.assert:
+        that:
+          - "'openvswitch_db' not in (kolla_running_docker_containers.stdout_lines | default([]))"
+          - "'openvswitch_vswitchd' not in (kolla_running_docker_containers.stdout_lines | default([]))"
+        fail_msg: "Refusing to delete /run/openvswitch while Kolla OVS containers are running. Stop/remove the containers first, or leave kolla_cleanup_openvswitch_runtime disabled."
+      when:
+        - kolla_cleanup_openvswitch_runtime | bool
+
     - name: Remove stale Open vSwitch runtime files
       ansible.builtin.file:
         path: "{{ item.path }}"

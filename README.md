@@ -81,11 +81,14 @@ ansible-playbook playbooks/30-deploy.yml --tags neutron
 - manages `/etc/hosts` entries with a real hostname and optional aliases per node
 - enables Docker and Chrony
 - installs `openvswitch-switch` but, by default, stops the host service and cleans stale runtime files so Kolla's OVS containers can own `/run/openvswitch`
+- installs `openvswitch-switch` but, by default, stops the host service
+- leaves OVS runtime cleanup disabled by default because deleting `/run/openvswitch` on an already deployed host breaks live Kolla OVS containers
 - creates the deployer virtualenv
 - installs `kolla-ansible` `20.x` from PyPI, a mirror, or a local wheelhouse
 - renders Kolla inventory and globals
 - generates `passwords.yml` if missing
 - runs the normal Kolla lifecycle
+- installs `python3-openstackclient` on the deployer and makes `/etc/kolla/admin-openrc.sh` readable after `post-deploy`
 
 ## Python Package Source
 
@@ -138,4 +141,6 @@ This project does not automatically distribute built images to compute nodes. Th
 - `playbooks/30-deploy.yml` runs Kolla commands from the deployment host only.
 - `playbooks/40-cisco-ndfc.yml` prepares the build environment and can optionally run `kolla-build`.
 - `kolla_manage_host_openvswitch_service: false` is the default because this scaffold assumes Kolla-managed OVS/OVN containers rather than a permanently running host OVS service.
+- `kolla_cleanup_openvswitch_runtime` should only be enabled for one-time recovery before a host-limited Kolla deploy; it is intentionally `false` by default.
 - Sensitive values in `inventory/group_vars/all.yml` are placeholders and should be replaced before use.
+

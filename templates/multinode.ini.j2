@@ -173,6 +173,7 @@
 {% for host in groups['haproxy'] | default([]) %}
 {{ host }}
 {% endfor %}
+
 [ovn-nb-db]
 {% for host in groups['ovn-nb-db'] | default([]) %}
 {{ host }}
@@ -230,4 +231,3 @@
 [ironic-tftp]
 
 [ironic-http]
-

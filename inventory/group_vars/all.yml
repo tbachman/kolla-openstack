@@ -111,6 +111,10 @@ kolla_run_bootstrap_servers: true
 kolla_run_prechecks: true
 kolla_run_deploy: true
 kolla_run_post_deploy: true
+kolla_install_openstack_client: true
+kolla_openstack_client_packages:
+  - python3-openstackclient
+kolla_admin_openrc_mode: "0644"
 
 kolla_enable_cisco_ndfc: true
 kolla_cisco_build_images: false

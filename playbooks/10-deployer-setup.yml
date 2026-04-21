@@ -81,3 +81,4 @@
         cmd: "{{ kolla_venv_path }}/bin/ansible-playbook --version"
       changed_when: false
       environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+

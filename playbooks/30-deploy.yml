@@ -60,6 +60,26 @@
       tags:
         - post-deploy
 
+    - name: Install OpenStack client packages on the deployer
+      ansible.builtin.apt:
+        name: "{{ kolla_openstack_client_packages }}"
+        state: present
+        update_cache: true
+      when: kolla_install_openstack_client | bool
+      environment: "{{ kolla_proxy_env }}"
+      tags:
+        - post-deploy
+        - client
+
+    - name: Ensure admin-openrc.sh is readable on the deployer
+      ansible.builtin.file:
+        path: /etc/kolla/admin-openrc.sh
+        mode: "{{ kolla_admin_openrc_mode }}"
+      when: kolla_run_post_deploy | bool
+      tags:
+        - post-deploy
+        - client
+
     - name: Reconfigure Neutron only
       become: false
       ansible.builtin.command:
