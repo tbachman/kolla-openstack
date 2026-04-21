@@ -1,0 +1,90 @@
+- name: Run the Kolla lifecycle from the deployment host
+  hosts: deployment
+  become: true
+  vars:
+    kolla_inventory_file: /etc/kolla/multinode
+    kolla_proxy_env:
+      http_proxy: "{{ kolla_http_proxy }}"
+      https_proxy: "{{ kolla_https_proxy }}"
+      no_proxy: "{{ kolla_no_proxy | join(',') }}"
+      HTTP_PROXY: "{{ kolla_http_proxy }}"
+      HTTPS_PROXY: "{{ kolla_https_proxy }}"
+      NO_PROXY: "{{ kolla_no_proxy | join(',') }}"
+    kolla_runtime_env:
+      PATH: "{{ kolla_venv_path }}/bin:{{ ansible_env.PATH }}"
+      VIRTUAL_ENV: "{{ kolla_venv_path }}"
+      ANSIBLE_COLLECTIONS_PATH: "{{ kolla_ansible_collections_path }}"
+  tasks:
+    - name: Install Ansible Galaxy dependencies
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-ansible install-deps"
+      when: kolla_run_install_deps | bool
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+      tags:
+        - always
+
+    - name: Bootstrap servers
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-ansible bootstrap-servers -i {{ kolla_inventory_file }}"
+      when: kolla_run_bootstrap_servers | bool
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+      tags:
+        - bootstrap
+
+    - name: Run prechecks
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-ansible prechecks -i {{ kolla_inventory_file }}"
+      when: kolla_run_prechecks | bool
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+      tags:
+        - prechecks
+
+    - name: Deploy OpenStack
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-ansible deploy -i {{ kolla_inventory_file }}"
+      when: kolla_run_deploy | bool
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+      tags:
+        - deploy
+
+    - name: Run post-deploy
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-ansible post-deploy -i {{ kolla_inventory_file }}"
+      when: kolla_run_post_deploy | bool
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+      tags:
+        - post-deploy
+
+    - name: Install OpenStack client packages on the deployer
+      ansible.builtin.apt:
+        name: "{{ kolla_openstack_client_packages }}"
+        state: present
+        update_cache: true
+      when: kolla_install_openstack_client | bool
+      environment: "{{ kolla_proxy_env }}"
+      tags:
+        - post-deploy
+        - client
+
+    - name: Ensure admin-openrc.sh is readable on the deployer
+      ansible.builtin.file:
+        path: /etc/kolla/admin-openrc.sh
+        mode: "{{ kolla_admin_openrc_mode }}"
+      when: kolla_run_post_deploy | bool
+      tags:
+        - post-deploy
+        - client
+
+    - name: Reconfigure Neutron only
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-ansible reconfigure -i {{ kolla_inventory_file }} --tags neutron"
+      when: kolla_enable_cisco_ndfc | bool
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+      tags:
+        - neutron

@@ -1,0 +1,35 @@
+network:
+  version: 2
+  renderer: {{ kolla_netplan_renderer }}
+  ethernets:
+    {{ kolla_primary_interface.name }}:
+      addresses:
+       - {{ kolla_primary_interface_address }}
+      nameservers:
+        addresses:
+{% for server in kolla_primary_interface.dns_servers %}
+          - {{ server }}
+{% endfor %}
+        search:
+{% for domain in kolla_primary_interface.dns_search %}
+          - {{ domain }}
+{% endfor %}
+      routes:
+        - to: default
+          via: {{ kolla_primary_interface.gateway }}
+{% if kolla_netplan_bond_enabled | bool %}
+{% for member in kolla_bond.interfaces %}
+    {{ member }}: {}
+{% endfor %}
+  bonds:
+    {{ kolla_bond.name }}:
+      interfaces:
+{% for member in kolla_bond.interfaces %}
+        - {{ member }}
+{% endfor %}
+      parameters:
+{% for key, value in kolla_bond.parameters.items() %}
+        {{ key }}: {{ value }}
+{% endfor %}
+      mtu: {{ kolla_bond.mtu }}
+{% endif %}

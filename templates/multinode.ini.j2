@@ -1,0 +1,233 @@
+[control]
+{% for host in groups['control'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[network]
+{% for host in groups['network'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[loadbalancer]
+{% for host in groups['loadbalancer'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[mariadb]
+{% for host in groups['mariadb'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[rabbitmq]
+{% for host in groups['rabbitmq'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[compute]
+{% for host in groups['compute'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[nova-api]
+{% for host in groups['control'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[nova-metadata]
+{% for host in groups['control'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[nova-conductor]
+{% for host in groups['control'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[nova-super-conductor]
+
+[nova-scheduler]
+{% for host in groups['control'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[nova-novncproxy]
+{% for host in groups['control'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[nova-spicehtml5proxy]
+
+[nova-serialproxy]
+
+[nova-compute-ironic]
+
+[neutron-server]
+{% for host in groups['neutron-server'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[neutron-ovn-agent]
+{% for host in groups['neutron-ovn-agent'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[neutron-ovn-metadata-agent]
+{% for host in groups['neutron-ovn-metadata-agent'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[neutron-cisco-topology-agent]
+{% for host in groups['neutron-cisco-topology-agent'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[neutron-dhcp-agent]
+
+[neutron-l3-agent]
+
+[neutron-metadata-agent]
+
+[neutron-bgp-dragent]
+
+[neutron-infoblox-ipam-agent]
+
+[neutron-metering-agent]
+
+[ironic-neutron-agent]
+
+[monitoring]
+{% for host in groups['monitoring'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[storage]
+
+[baremetal]
+
+[deployment]
+{% for host in groups['deployment'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[glance-api]
+{% for host in groups['glance-api'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[heat-api]
+{% for host in groups['heat-api'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[heat-api-cfn]
+{% for host in groups['heat-api-cfn'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[heat-engine]
+{% for host in groups['heat-engine'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[horizon]
+{% for host in groups['horizon'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[keystone]
+{% for host in groups['keystone'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[fluentd]
+{% for host in groups['fluentd'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[placement-api]
+{% for host in groups['placement-api'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[kolla-toolbox]
+{% for host in groups['kolla-toolbox'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[kolla-logs]
+{% for host in groups['kolla-logs'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[memcached]
+{% for host in groups['memcached'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[cron]
+{% for host in groups['cron'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[haproxy]
+{% for host in groups['haproxy'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ovn-nb-db]
+{% for host in groups['ovn-nb-db'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ovn-sb-db]
+{% for host in groups['ovn-sb-db'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ovn-northd]
+{% for host in groups['ovn-northd'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ovn-controller]
+{% for host in groups['ovn-controller'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[openvswitch]
+{% for host in groups['openvswitch'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ovn-sb-db-relay]
+{% for host in groups['ovn-sb-db-relay'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ovn-controller-network]
+{% for host in groups['ovn-controller-network'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ovn-controller-compute]
+{% for host in groups['ovn-controller-compute'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ironic-api]
+{% for host in groups['ironic-api'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ironic-conductor]
+{% for host in groups['ironic-conductor'] | default([]) %}
+{{ host }}
+{% endfor %}
+
+[ironic-inspector]
+
+[ironic-dnsmasq]
+
+[ironic-tftp]
+
+[ironic-http]

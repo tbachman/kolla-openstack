@@ -1,0 +1,9 @@
+[DEFAULT]
+base = {{ kolla_base_distro }}
+install_type = {{ kolla_install_type }}
+tag = {{ kolla_neutron_server_tag }}
+
+[neutron-server-plugin-networking-cisco]
+type = git
+location = https://opendev.org/x/networking-cisco
+reference = stable/{{ kolla_openstack_release }}

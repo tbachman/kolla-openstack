@@ -1,0 +1,35 @@
+- name: Render Kolla configuration
+  hosts: deployment
+  become: true
+  tasks:
+    - name: Seed passwords.yml from the Kolla example config when missing
+      ansible.builtin.copy:
+        src: "{{ kolla_venv_path }}/share/kolla-ansible/etc_examples/kolla/passwords.yml"
+        dest: /etc/kolla/passwords.yml
+        remote_src: true
+        owner: "{{ kolla_deployer_user }}"
+        group: "{{ kolla_deployer_user }}"
+        mode: "0640"
+        force: false
+
+    - name: Render globals.yml
+      ansible.builtin.template:
+        src: ../templates/globals.yml.j2
+        dest: /etc/kolla/globals.yml
+        owner: "{{ kolla_deployer_user }}"
+        group: "{{ kolla_deployer_user }}"
+        mode: "0640"
+
+    - name: Render Kolla multinode inventory
+      ansible.builtin.template:
+        src: ../templates/multinode.ini.j2
+        dest: /etc/kolla/multinode
+        owner: "{{ kolla_deployer_user }}"
+        group: "{{ kolla_deployer_user }}"
+        mode: "0644"
+
+    - name: Generate passwords if missing
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-genpwd"
+      when: kolla_generate_passwords | bool

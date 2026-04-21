@@ -1,0 +1,84 @@
+- name: Set up the Kolla deployer host
+  hosts: deployment
+  become: true
+  vars:
+    kolla_proxy_env:
+      http_proxy: "{{ kolla_http_proxy }}"
+      https_proxy: "{{ kolla_https_proxy }}"
+      no_proxy: "{{ kolla_no_proxy | join(',') }}"
+      HTTP_PROXY: "{{ kolla_http_proxy }}"
+      HTTPS_PROXY: "{{ kolla_https_proxy }}"
+      NO_PROXY: "{{ kolla_no_proxy | join(',') }}"
+    kolla_runtime_env:
+      PATH: "{{ kolla_venv_path }}/bin:{{ ansible_env.PATH }}"
+      VIRTUAL_ENV: "{{ kolla_venv_path }}"
+      ANSIBLE_COLLECTIONS_PATH: "{{ kolla_ansible_collections_path }}"
+  tasks:
+    - name: Ensure /etc/kolla exists
+      ansible.builtin.file:
+        path: /etc/kolla
+        state: directory
+        owner: "{{ kolla_deployer_user }}"
+        group: "{{ kolla_deployer_user }}"
+        mode: "0755"
+
+    - name: Create the deployer virtualenv
+      become: false
+      ansible.builtin.command:
+        cmd: "python3 -m venv {{ kolla_venv_path }}"
+        creates: "{{ kolla_venv_path }}/bin/activate"
+
+    - name: Check whether a local wheelhouse path is configured
+      become: false
+      ansible.builtin.stat:
+        path: "{{ kolla_pip_wheelhouse }}"
+      register: kolla_pip_wheelhouse_stat
+      when: kolla_pip_wheelhouse | length > 0
+
+    - name: Validate the configured wheelhouse path
+      ansible.builtin.assert:
+        that:
+          - kolla_pip_wheelhouse_stat.stat.exists
+          - kolla_pip_wheelhouse_stat.stat.isdir
+        fail_msg: "kolla_pip_wheelhouse is set but does not exist on the deployment host: {{ kolla_pip_wheelhouse }}"
+      when: kolla_pip_wheelhouse | length > 0
+
+    - name: Install kolla-ansible into the virtualenv
+      become: false
+      ansible.builtin.pip:
+        name:
+          - "{{ kolla_ansible_core_pip_package }}"
+          - "{{ kolla_ansible_pip_package }}"
+        virtualenv: "{{ kolla_venv_path }}"
+        extra_args: >-
+          {{
+            (
+              (
+                ['--no-index --find-links ' ~ kolla_pip_wheelhouse]
+                if (kolla_pip_wheelhouse | length > 0)
+                else []
+              )
+              +
+              (
+                [kolla_pip_extra_args]
+                if (kolla_pip_extra_args | length > 0)
+                else []
+              )
+            ) | join(' ')
+          }}
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+
+    - name: Verify kolla-ansible is installed
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/kolla-ansible --version"
+      changed_when: false
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+
+    - name: Verify ansible-playbook version from the virtualenv
+      become: false
+      ansible.builtin.command:
+        cmd: "{{ kolla_venv_path }}/bin/ansible-playbook --version"
+      changed_when: false
+      environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+

@@ -1,0 +1,4 @@
+[Service]
+Environment="HTTP_PROXY={{ kolla_http_proxy }}"
+Environment="HTTPS_PROXY={{ kolla_https_proxy }}"
+Environment="NO_PROXY={{ kolla_no_proxy | join(',') }}"
