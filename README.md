@@ -144,3 +144,51 @@ This project does not automatically distribute built images to compute nodes. Th
 - `kolla_cleanup_openvswitch_runtime` should only be enabled for one-time recovery before a host-limited Kolla deploy; it is intentionally `false` by default.
 - Sensitive values in `inventory/group_vars/all.yml` are placeholders and should be replaced before use.
 
+
+This is a very opinionated, slightly configurable set of playbooks to install OpenStack using kolla-ansible.
+
+Hypervisor:
+* Ubuntu server
+* create linux bridge to connect all VMs
+* have enough NIC ports on the hypervisor to support pass-through interfaces to the VMs used as compute nodes for OpenStack
+*
+You need to create 3 VMs:
+* Controller VM. This only needs a
+
+      +---------------------------------------------------------+
+      |                       Linux Bridge                      |
+      |                          (br0)                          |
+      +---------------------------------------------------------+
+              |                  |                  |
+              |                  |                  |
+      +-------|-------+  +-------|-------+  +-------|-------+
+      |    [veth0]    |  |    [veth1]    |  |    [veth2]    |
+      |               |  |               |  |               |
+      |      VM       |  |      VM       |  |      VM       |
+      |   Controller  |  |   Compute 1   |  |   Compute 2   |
+      +---------------+  +---|-------|---+  +---|-------|---+
+                             |       |          |       |
+                          [eth1]   [eth2]    [eth1]   [eth2]
+                             |       |          |       |
+                             |       |          |       |
+
+
+Here are the commands that I had to run on the controller:
+
+sudo -E apt install net-tools
+sudo -E apt install git
+sudo -E apt install vim
+sudo -E apt install iputils-ping
+export https_proxy=http://proxy.esl.cisco.com:80
+git clone https://github.com/tbachman/kolla-openstack.git
+cd kolla-openstack/
+sudo vi /etc/hosts
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla01
+ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla02
+ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla03
+echo 'noiro ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/90-ansible-noiro
+sudo chmod 440 /etc/sudoers.d/90-ansible-noiro
+sudo visudo -cf /etc/sudoers.d/90-ansible-noiro
+sudo -E apt install ansible -y
+

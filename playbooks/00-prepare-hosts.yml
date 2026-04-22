@@ -73,6 +73,20 @@
         update_cache: true
       environment: "{{ kolla_proxy_env }}"
 
+    - name: Configure chrony server entries
+      ansible.builtin.lineinfile:
+        path: /etc/chrony/chrony.conf
+        line: "{{ item }}"
+        state: present
+      loop: "{{ kolla_chrony_server_entries | default([]) }}"
+      register: kolla_chrony_config
+
+    - name: Restart chrony after configuration change
+      ansible.builtin.systemd:
+        name: chrony
+        state: restarted
+      when: kolla_chrony_config is changed
+
     - name: Stop and disable host openvswitch-switch when using Kolla-managed OVS
       ansible.builtin.systemd:
         name: openvswitch-switch

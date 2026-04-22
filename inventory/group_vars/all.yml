@@ -55,14 +55,13 @@ kolla_bond:
 kolla_manage_hosts_file: true
 kolla_host_entries:
   - ip: 172.25.235.200
-    hostname: os-nd-controler-1
-    aliases: kkolla01
+    hostname: kkolla01
   - ip: 172.25.235.201
-    hostname: os-nd-compute-1
-    aliases: kkolla02
+    hostname: kkolla02
   - ip: 172.25.235.202
-    hostname: os-nd-compute-2
-    aliases: kkolla03
+    hostname: kkolla03
+kolla_chrony_server_entries:
+  - "server 10.81.254.202 iburst minpoll 6 maxpoll 10"
 
 kolla_common_packages:
   - python3
@@ -74,6 +73,7 @@ kolla_common_packages:
   - libssl-dev
   - curl
   - jq
+  - iputils-ping
   - chrony
   - ca-certificates
   - apt-transport-https
@@ -104,6 +104,8 @@ kolla_neutron_physical_networks: physnet1
 kolla_neutron_network_vlan_ranges: physnet1:1:3900
 kolla_neutron_type_drivers: flat,vlan
 kolla_neutron_tenant_network_types: vlan
+#kolla_neutron_type_drivers: nd,geneve,gre,vlan,flat,local
+#kolla_neutron_tenant_network_types: nd,geneve,gre,vlan,flat,local
 
 kolla_generate_passwords: true
 kolla_run_install_deps: true
@@ -118,6 +120,11 @@ kolla_admin_openrc_mode: "0644"
 
 kolla_enable_cisco_ndfc: true
 kolla_cisco_build_images: false
+#kolla_cisco_build_images: true
+#kolla_docker_registry_login_enabled: false
+#kolla_docker_registry: ""
+#kolla_docker_registry_username: ""
+#kolla_docker_registry_password: ""
 kolla_neutron_server_image: kolla/neutron-server
 kolla_neutron_server_tag: "20.3.0"
 kolla_neutron_cisco_topology_agent_image: kolla/neutron-cisco-topology-agent
@@ -129,6 +136,8 @@ kolla_neutron_mechanism_drivers:
   - name: ovn
   - name: ndfc
   - name: logger
+#kolla_neutron_extension_drivers:
+#  - name: nd_extension_driver
 kolla_ndfc_config:
   ndfc_ip: 172.25.235.51
   user: admin
@@ -138,6 +147,10 @@ kolla_ndfc_config:
   enable_keystone_notification_purge: true
   keystone_notification_exchange: keystone
   keystone_notification_topic: notifications
+  force_old_api: false
+  enable_l3_on_border: false
+  vlan_hardware_l3: true
+  nd_sync_poll_interval: 600
 kolla_keystone_notification_topics:
   - name: notifications
     enabled: true
