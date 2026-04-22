@@ -70,9 +70,9 @@
       become: false
       ansible.builtin.replace:
         path: "{{ kolla_venv_path }}/share/kolla-ansible/ansible/roles/neutron/templates/ml2_conf.ini.j2"
-        regexp: |
+        regexp: !unsafe |
           \[ml2_type_vlan\]\n\{% if enable_ironic \| bool %\}\nnetwork_vlan_ranges = \{\{ neutron_physical_networks \}\}\n\{% else %\}\nnetwork_vlan_ranges =\n\{% endif %\}
-        replace: |
+        replace: !unsafe |
           [ml2_type_vlan]
           network_vlan_ranges = {{ neutron_network_vlan_ranges }}
 
@@ -99,6 +99,27 @@
     - name: Show whether the Cisco topology image is recognized
       ansible.builtin.debug:
         msg: "{{ kolla_image_list.stdout_lines | select('search', 'neutron-(cisco-topology-agent|server)') | list }}"
+
+    - name: Require Docker registry credentials when login is enabled
+      ansible.builtin.assert:
+        that:
+          - kolla_docker_registry_username | length > 0
+          - kolla_docker_registry_password | length > 0
+        fail_msg: "Set kolla_docker_registry_username and kolla_docker_registry_password before enabling kolla_docker_registry_login_enabled."
+      when: kolla_docker_registry_login_enabled | bool
+      no_log: true
+
+    - name: Log in to the Docker registry when enabled
+      become: false
+      ansible.builtin.command:
+        cmd: >-
+          docker login
+          {% if kolla_docker_registry | length > 0 %} {{ kolla_docker_registry }}{% endif %}
+          --username {{ kolla_docker_registry_username }}
+          --password-stdin
+        stdin: "{{ kolla_docker_registry_password }}"
+      when: kolla_docker_registry_login_enabled | bool
+      no_log: true
 
     - name: Build the Neutron images when explicitly requested
       become: false
