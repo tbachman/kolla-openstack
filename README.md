@@ -173,22 +173,76 @@ You need to create 3 VMs:
                              |       |          |       |
 
 
+Initially, you'll need to change the following in inventory/group_vars/all.yml:
+* kolla_no_proxy:
+* kolla_internal_vip_address
+* kolla_host_entries
+
+You'll also need to change the hosts and IPs in inventory/hosts.yml
+
 Here are the commands that I had to run on the controller:
 
+# on just the controller
 sudo -E apt install net-tools
 sudo -E apt install git
 sudo -E apt install vim
 sudo -E apt install iputils-ping
+sudo -E apt install ansible -y
 export https_proxy=http://proxy.esl.cisco.com:80
 git clone https://github.com/tbachman/kolla-openstack.git
 cd kolla-openstack/
 sudo vi /etc/hosts
 ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
-ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla01
-ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla02
-ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla03
+ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla04
+ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla05
+ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla06
+
+# on all hosts
 echo 'noiro ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/90-ansible-noiro
 sudo chmod 440 /etc/sudoers.d/90-ansible-noiro
 sudo visudo -cf /etc/sudoers.d/90-ansible-noiro
-sudo -E apt install ansible -y
 
+Make sure you have bonding enabled if you're using bonds (configured in inventory/group_vars/all.yml):
+kolla_netplan_bond_enabled: true
+
+You may need to configure the networking parameters (including the bond) here:
+kolla_network_interface: enp1s0
+kolla_bond
+  name: bond0
+  mtu: 9000
+  interfaces:
+    - enp7s0
+    - enp8s0
+
+# now run the playbooks
+ansible-playbook playbooks/00-prepare-hosts.yml
+ansible-playbook playbooks/10-deployer-setup.yml
+ansible-playbook playbooks/20-configure-kolla.yml
+ansible-playbook playbooks/30-deploy.yml
+
+At this point, you should have a deployed OpenStack cloud without the integration with ND.
+
+Now set in inventory/group_vars/all.yml:
+* kolla_enable_cisco_ndfc: true
+* kolla_cisco_build_images: true
+* kolla_docker_registry_username: <your docker user ID>
+* kolla_docker_registry_password: <your docker user password>
+* kolla_neutron_type_drivers: nd,geneve,gre,vlan,flat,local
+* kolla_neutron_tenant_network_types: nd,geneve,gre,vlan,flat,local
+* kolla_neutron_extension_drivers:
+  - name: nd_extension_driver
+
+And run the playbook to use the new ansible configuration and build the new images and configuration for the integration with ND:
+
+ansible-playbook playbooks/20-configure-kolla.yml
+ansible-playbook playbooks/40-cisco-ndfc.yml
+
+
+The playbook is missing the step that pushes the images to the compute nodes:
+docker save kolla/neutron-cisco-topology-agent:20.3.0 | ssh kkolla05 'docker load'
+
+I also have to fix the extension drivers config - the parameter in inventory/group_vars/all.yml isn't updateing /etc/kolla/globals.yml
+
+Now re-run the OpenStack deploy playbook with the neutron tag to deploy the integration with ND:
+
+ansible-playbook playbooks/30-deploy.yml --tags neutron

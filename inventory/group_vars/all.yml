@@ -28,7 +28,7 @@ kolla_network_interface: enp1s0
 kolla_neutron_external_interface: bond0
 kolla_enable_haproxy: true
 
-kolla_manage_netplan: false
+kolla_manage_netplan: true
 kolla_netplan_file: /etc/netplan/01-kolla.yaml
 kolla_netplan_renderer: networkd
 kolla_netplan_bond_enabled: false
