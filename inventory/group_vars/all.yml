@@ -136,7 +136,8 @@ kolla_neutron_mechanism_drivers:
   - name: ovn
   - name: ndfc
   - name: logger
-#kolla_neutron_extension_drivers:
+kolla_neutron_extension_drivers:
+  - name: port_security
 #  - name: nd_extension_driver
 kolla_ndfc_config:
   ndfc_ip: 172.25.235.51
