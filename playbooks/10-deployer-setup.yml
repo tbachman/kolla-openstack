@@ -48,7 +48,7 @@
       ansible.builtin.pip:
         name:
           - "{{ kolla_ansible_core_pip_package }}"
-          - "{{ kolla_ansible_pip_package }}"
+          - "git+https://github.com/tbachman/kolla-ansible@ndfc"
         virtualenv: "{{ kolla_venv_path }}"
         extra_args: >-
           {{
