@@ -9,7 +9,7 @@ An Ansible project for deploying OpenStack Epoxy (`stable/2025.1`) with `kolla-a
 ## Layout
 
 - `ansible.cfg`: local project Ansible defaults
-- `inventory/hosts.yml`: sample inventory for `kkolla01-03`
+- `inventory/hosts.yml`: sample inventory with explicit `controller` and `compute_nodes` role groups
 - `inventory/group_vars/all.yml`: deployment variables
 - `templates/`: generated Kolla config and optional netplan/build artifacts
 - `playbooks/00-prepare-hosts.yml`: host prerequisites for all nodes
@@ -34,10 +34,11 @@ An Ansible project for deploying OpenStack Epoxy (`stable/2025.1`) with `kolla-a
 
 1. Review and edit `inventory/hosts.yml`.
    Set `kolla_primary_interface_address` per host if you enable netplan management.
+   The inventory maps service groups from the explicit `controller` and `compute_nodes` role groups, so you only need to place hosts in those role groups rather than repeating each hostname under every Kolla service.
 2. Review and edit `inventory/group_vars/all.yml`.
-   If the controller needs a proxy for outbound access, set `kolla_http_proxy`, `kolla_https_proxy`, and extend `kolla_no_proxy` for your internal addresses.
+   If the controller needs a proxy for outbound access, set `kolla_http_proxy`, `kolla_https_proxy`, and extend `kolla_no_proxy_extra` for your internal addresses.
    If you also use an internal Python mirror or wheelhouse, set `kolla_pip_extra_args` or `kolla_pip_wheelhouse` as needed.
-   Set `kolla_host_entries` so each node's real hostname is present, with short aliases as needed.
+   `kolla_host_entries` is now only needed for extra aliases beyond the inventory hostnames; `/etc/hosts` entries for inventory nodes are generated automatically.
 
 If you run `kolla-ansible` manually with `sudo`, preserve the venv and collection path:
 
@@ -92,13 +93,10 @@ If your environment requires an outbound proxy, set:
 ```yaml
 kolla_http_proxy: "http://proxy.example.com:3128"
 kolla_https_proxy: "http://proxy.example.com:3128"
-kolla_no_proxy:
+kolla_no_proxy_extra:
   - localhost
   - 127.0.0.1
   - 10.193.253.0/24
-  - kkolla01
-  - kkolla02
-  - kkolla03
 ```
 
 Those values are applied to `apt`, `pip`, `kolla-ansible`, and `kolla-build` commands run by these playbooks.
@@ -167,11 +165,11 @@ You need to create 3 VMs:
 
 
 Initially, you'll need to change the following in inventory/group_vars/all.yml:
-* kolla_no_proxy:
+* kolla_no_proxy_extra:
 * kolla_internal_vip_address
 * kolla_host_entries
 
-You'll also need to change the hosts and IPs in inventory/hosts.yml
+You'll also need to change the hosts, IPs, and `controller` / `compute_nodes` role membership in inventory/hosts.yml
 
 Here are the commands that I had to run on the controller:
 

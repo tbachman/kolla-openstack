@@ -10,16 +10,11 @@ kolla_pip_extra_args: ""
 kolla_pip_wheelhouse: ""
 kolla_http_proxy: "http://proxy.esl.cisco.com:80"
 kolla_https_proxy: "http://proxy.esl.cisco.com:80"
-kolla_no_proxy:
-  - 172.25.235.200
-  - 172.25.235.201
-  - 172.25.235.202
-  - kkolla01
-  - kkolla02
-  - kkolla03
+kolla_no_proxy_extra:
   - 172.25.235.0/24
   - localhost
   - 127.0.0.1
+kolla_no_proxy: "{{ ((groups['all'] | default([])) + (groups['all'] | default([]) | map('extract', hostvars, 'ansible_host') | select('defined') | list) + kolla_no_proxy_extra) | unique }}"
 kolla_openstack_release: "2025.1"
 kolla_base_distro: ubuntu
 kolla_install_type: binary
@@ -53,13 +48,7 @@ kolla_bond:
     transmit-hash-policy: layer3+4
 
 kolla_manage_hosts_file: true
-kolla_host_entries:
-  - ip: 172.25.235.200
-    hostname: kkolla01
-  - ip: 172.25.235.201
-    hostname: kkolla02
-  - ip: 172.25.235.202
-    hostname: kkolla03
+kolla_host_entries: []
 kolla_chrony_server_entries:
   - "server 10.81.254.202 iburst minpoll 6 maxpoll 10"
 
