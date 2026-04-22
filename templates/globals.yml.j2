@@ -60,6 +60,11 @@ neutron_mechanism_drivers:
   - name: {{ item.name }}
 {% endfor %}
 
+neutron_extension_drivers:
+{% for item in kolla_neutron_extension_drivers %}
+  - name: {{ item.name }}
+{% endfor %}
+
 keystone_notification_topics:
 {% for item in kolla_keystone_notification_topics %}
   - name: {{ item.name }}
