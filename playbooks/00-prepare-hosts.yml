@@ -53,11 +53,13 @@
       when: kolla_manage_netplan | bool
 
     - name: Manage static host entries
-      ansible.builtin.blockinfile:
+      ansible.builtin.lineinfile:
         path: /etc/hosts
-        marker: "# {mark} KOLLA HOSTS"
-        block: "{{ lookup('template', playbook_dir ~ '/../templates/hosts-block.j2') }}"
-      when: kolla_manage_hosts_file | bool
+        state: present
+        line: "{{ item.ip }} {{ item.hostname }}"
+      loop: "{{ kolla_host_entries | default([]) }}"
+      when:
+        - kolla_manage_hosts_file | bool
 
     - name: Remove 127.0.1.1 host mapping
       ansible.builtin.lineinfile:
