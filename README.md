@@ -6,8 +6,6 @@ An Ansible project for deploying OpenStack Epoxy (`stable/2025.1`) with `kolla-a
 - `2` compute nodes
 - the controller also acting as the deployment host
 
-The scaffold is based on the deployment notes you supplied, but reorganized into repeatable playbooks and templates.
-
 ## Layout
 
 - `ansible.cfg`: local project Ansible defaults
@@ -40,11 +38,6 @@ The scaffold is based on the deployment notes you supplied, but reorganized into
    If the controller needs a proxy for outbound access, set `kolla_http_proxy`, `kolla_https_proxy`, and extend `kolla_no_proxy` for your internal addresses.
    If you also use an internal Python mirror or wheelhouse, set `kolla_pip_extra_args` or `kolla_pip_wheelhouse` as needed.
    Set `kolla_host_entries` so each node's real hostname is present, with short aliases as needed.
-3. Run the baseline flow:
-
-```bash
-ansible-playbook playbooks/site.yml
-```
 
 If you run `kolla-ansible` manually with `sudo`, preserve the venv and collection path:
 
