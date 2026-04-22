@@ -174,21 +174,46 @@ You'll also need to change the hosts, IPs, and `controller` / `compute_nodes` ro
 Here are the commands that I had to run on the controller:
 
 # on just the controller
-sudo -E apt install net-tools
-sudo -E apt install git
-sudo -E apt install vim
-sudo -E apt install iputils-ping
+sudo -E apt install git -y
+sudo -E apt install vim -y
 sudo -E apt install ansible -y
 export https_proxy=http://proxy.esl.cisco.com:80
 git clone https://github.com/tbachman/kolla-openstack.git
 cd kolla-openstack/
+
+# Update inventory/hosts.yml based on your hosts. The "deployment"
+# is the host you're using to run these playbooks from, while the
+# "controller" is where the server-side OpenStack services will run,
+# and the "compute_nodes" is where the hypervisor- and agnet-side
+# OpenStack services will run:
+    deployment:
+      hosts:
+        kkolla01:
+          ansible_host: 172.25.235.200
+          kolla_primary_interface_address: 172.25.235.200/24
+    controller:
+      hosts:
+        kkolla01:
+    compute_nodes:
+      hosts:
+        kkolla02:
+          ansible_host: 172.25.235.201
+          kolla_primary_interface_address: 172.25.235.201/24
+        kkolla03:
+          ansible_host: 172.25.235.202
+          kolla_primary_interface_address: 172.25.235.202/24
+
+
+# add hostnames for all the nodes:
 sudo vi /etc/hosts
+
+# generate ssh key and copy it to each host
 ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla04
 ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla05
 ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla06
 
-# on all hosts
+# enable passowrdless sudo  on all hosts (run this on all hosts)
 echo 'noiro ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/90-ansible-noiro
 sudo chmod 440 /etc/sudoers.d/90-ansible-noiro
 sudo visudo -cf /etc/sudoers.d/90-ansible-noiro
