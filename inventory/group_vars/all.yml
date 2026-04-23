@@ -17,7 +17,7 @@ kolla_no_proxy: "{{ ((groups['all'] | default([])) + (groups['all'] | default([]
 kolla_openstack_release: "2025.1"
 kolla_base_distro: ubuntu
 kolla_install_type: binary
-kolla_internal_vip_address: 172.25.235.204
+kolla_internal_vip_address: 192.168.1.204
 kolla_network_interface: enp1s0
 kolla_neutron_external_interface: bond0
 kolla_enable_haproxy: true
@@ -28,11 +28,11 @@ kolla_netplan_renderer: networkd
 kolla_netplan_bond_enabled: true
 kolla_primary_interface:
   name: "{{ kolla_network_interface }}"
-  gateway: 172.25.235.1
+  gateway: 192.168.1.1
   dns_servers:
-    - 172.28.184.18
+    - 192.168.1.18
   dns_search:
-    - noiro.lab
+    - local.domain
 kolla_manage_host_openvswitch_service: false
 kolla_cleanup_openvswitch_runtime: true
 kolla_bond:
@@ -133,9 +133,9 @@ kolla_neutron_extension_drivers:
   - name: port_security
 #  - name: nd_extension_driver
 kolla_ndfc_config:
-  ndfc_ip: 172.25.235.51
+  ndfc_ip: 192.168.1.51
   user: admin
-  pwd: Noir0123!
+  pwd: mypassword
   fabric_name: nd-ostack-1
   switch_sync_interval: "180"
   enable_keystone_notification_purge: true

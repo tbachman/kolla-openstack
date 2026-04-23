@@ -21,13 +21,30 @@
           - kolla_enable_neutron_ndfc | bool
         fail_msg: "Set kolla_enable_neutron_ndfc: true before running the Cisco overlay playbook."
 
-    - name: Install kolla build tooling into the deployer venv
-      become: false
-      ansible.builtin.pip:
-        name:
-          - "kolla=={{ kolla_package_version }}"
-          - docker
-        virtualenv: "{{ kolla_venv_path }}"
+    - name: Install Cisco client extensions and kolla build tooling into the deployer venv
+       become: false
+       ansible.builtin.pip:
+         name:
+           - "networking-cisco=={{ kolla_openstack_release }}"
+           - "kolla=={{ kolla_package_version }}"
+           - docker
+         virtualenv: "{{ kolla_venv_path }}"
+         extra_args: >-
+           {{
+             (
+               (
+                 ['--no-index --find-links ' ~ kolla_pip_wheelhouse]
+                 if (kolla_pip_wheelhouse | length > 0)
+                 else []
+               )
+               +
+               (
+                 [kolla_pip_extra_args]
+                 if (kolla_pip_extra_args | length > 0)
+                 else []
+               )
+             ) | join(' ')
+           }}
       environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
 
     - name: Discover the venv site-packages path
@@ -127,3 +144,17 @@
         cmd: "{{ kolla_venv_path }}/bin/kolla-build -b {{ kolla_base_distro }} --template-override {{ kolla_cisco_template_override_path }} neutron"
       when: kolla_cisco_build_images | bool
       environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
+
+    - name: Push the Cisco topology agent image to compute hosts
+      become: false
+      ansible.builtin.shell:
+        cmd: >-
+          sudo docker save {{ kolla_neutron_cisco_topology_agent_image }}:{{ kolla_neutron_cisco_topology_agent_tag }}
+          | ssh {{ hostvars[item].ansible_user | default(ansible_user) }}@{{ hostvars[item].ansible_host | default(item) }} 'docker load'
+      loop: "{{ groups['neutron-cisco-topology-agent'] | default([]) }}"
+      loop_control:
+        label: "{{ item }}"
+      when:
+        - kolla_cisco_build_images | bool
+        - (groups['neutron-cisco-topology-agent'] | default([])) | length > 0
+
