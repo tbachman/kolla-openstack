@@ -1,4 +1,0 @@
-- import_playbook: 00-prepare-hosts.yml
-- import_playbook: 10-deployer-setup.yml
-- import_playbook: 20-configure-kolla.yml
-- import_playbook: 30-deploy.yml

@@ -33,6 +33,7 @@
       ansible.builtin.file:
         path: /etc/netplan/50-cloud-init.yaml
         state: absent
+      register: kolla_cloud_init_netplan
       when: kolla_manage_netplan | bool
 
     - name: Require a host-specific primary interface address when managing netplan
@@ -50,7 +51,16 @@
         owner: root
         group: root
         mode: "0600"
+      register: kolla_netplan_config
       when: kolla_manage_netplan | bool
+
+    - name: Apply netplan when configuration changes
+      ansible.builtin.command:
+        cmd: netplan apply
+      when:
+        - kolla_manage_netplan | bool
+        - (kolla_cloud_init_netplan is defined and kolla_cloud_init_netplan.changed) or
+          (kolla_netplan_config is defined and kolla_netplan_config.changed)
 
     - name: Manage host entries for inventory nodes
       ansible.builtin.lineinfile:
