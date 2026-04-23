@@ -72,15 +72,6 @@
         - kolla_manage_hosts_file | bool
         - hostvars[item].ansible_host is defined
 
-    - name: Manage extra static host entries
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        state: present
-        line: "{{ item.ip }} {{ item.hostname }}"
-      loop: "{{ kolla_host_entries | default([]) }}"
-      when:
-        - kolla_manage_hosts_file | bool
-
     - name: Remove 127.0.1.1 host mapping
       ansible.builtin.lineinfile:
         path: /etc/hosts
