@@ -18,8 +18,8 @@
     - name: Require explicit Cisco enablement
       ansible.builtin.assert:
         that:
-          - kolla_enable_cisco_ndfc | bool
-        fail_msg: "Set kolla_enable_cisco_ndfc: true before running the Cisco overlay playbook."
+          - kolla_enable_neutron_ndfc | bool
+        fail_msg: "Set kolla_enable_neutron_ndfc: true before running the Cisco overlay playbook."
 
     - name: Install kolla build tooling into the deployer venv
       become: false

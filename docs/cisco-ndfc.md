@@ -7,7 +7,7 @@ The baseline project automates the build preparation for the Cisco overlay, but 
 
 ## Suggested flow
 
-1. Set `kolla_enable_cisco_ndfc: true` in `group_vars/all.yml`.
+1. Set `kolla_enable_neutron_ndfc: true` in `group_vars/all.yml`.
 2. Replace placeholder secrets in `kolla_ndfc_config`.
 3. Run:
 

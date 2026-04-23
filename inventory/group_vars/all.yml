@@ -112,10 +112,9 @@ kolla_openstack_client_packages:
   - python3-openstackclient
 kolla_admin_openrc_mode: "0644"
 
-kolla_enable_cisco_ndfc: true
 kolla_cisco_build_images: false
 #kolla_cisco_build_images: true
-kolla_docker_registry_login_enabled: false
+kolla_docker_registry_login_enabled: true
 kolla_docker_registry: ""
 kolla_docker_registry_username: ""
 kolla_docker_registry_password: ""

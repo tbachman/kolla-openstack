@@ -84,7 +84,7 @@
       become: false
       ansible.builtin.command:
         cmd: "{{ kolla_venv_path }}/bin/kolla-ansible reconfigure -i {{ kolla_inventory_file }} --tags neutron"
-      when: kolla_enable_cisco_ndfc | bool
+      when: kolla_enable_neutron_ndfc | bool
       environment: "{{ kolla_proxy_env | combine(kolla_runtime_env) }}"
       tags:
         - neutron
