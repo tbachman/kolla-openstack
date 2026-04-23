@@ -67,19 +67,19 @@ in the example below):
     deployment:
       hosts:
         kkolla01:
-          ansible_host: 172.25.235.200
-          kolla_primary_interface_address: 172.25.235.200/24
+          ansible_host: 192.168.1.200
+          kolla_primary_interface_address: 192.168.1.200/24
     controller:
       hosts:
         kkolla01:
     compute_nodes:
       hosts:
         kkolla02:
-          ansible_host: 172.25.235.201
-          kolla_primary_interface_address: 172.25.235.201/24
+          ansible_host: 192.168.1.201
+          kolla_primary_interface_address: 192.168.1.201/24
         kkolla03:
-          ansible_host: 172.25.235.202
-          kolla_primary_interface_address: 172.25.235.202/24
+          ansible_host: 192.168.1.202
+          kolla_primary_interface_address: 192.168.1.202/24
 ```
 
 We should add a new playbook that just does the following steps:
@@ -87,7 +87,7 @@ We should add a new playbook that just does the following steps:
 Initially, you may need to change the following in inventory/group_vars/all.yml:
 * kolla_network_interface
 * kolla_internal_vip_address
-* kolla_primary_interface (gateway IP)
+* kolla_primary_interface (update gateway, dns_servers, and dns_search)
 * kolla_bond (if using a bond - need to set the subordinate interfaces names)
 * kolla_ndfc_config (update IP, credentials, and fabric name for your ND instance)
 
@@ -102,7 +102,7 @@ sudo vi /etc/hosts
 
 An example entry:
 ```yaml
-172.25.235.200 kkolla01
+192.168.1.200 kkolla01
 ```
 
 Now run a script to set up passwordless ssh to all the hosts:
@@ -145,7 +145,7 @@ ansible-playbook playbooks/20-configure-kolla.yml
 ansible-playbook playbooks/40-cisco-ndfc.yml
 ```
 
-We should fix 40-cisco-ndfc.yml so that it also installs networking-cisco on the deployer node, so that we can use the python client extensions.
+The Cisco overlay playbook also installs `networking-cisco` into the deployer virtualenv so the OpenStack client can load the Cisco Python client extensions.
 
 Now re-run the OpenStack deploy playbook with the neutron tag to deploy the integration with ND:
 
