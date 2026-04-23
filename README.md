@@ -168,31 +168,29 @@ This project does not automatically distribute built images to compute nodes. Th
 
 
 
-Initially, you'll need to change the following in inventory/group_vars/all.yml:
-* kolla_no_proxy_extra:
-* kolla_internal_vip_address
-* kolla_host_entries
-
 You'll also need to change the hosts, IPs, and `controller` / `compute_nodes` role membership in inventory/hosts.yml
 
 Here are the commands that I had to run on the controller:
 
-# on just the controller
-sh ./bootstrap-deployer.sh
-sudo -E apt install git -y
-sudo -E apt install vim -y
-sudo -E apt install ansible -y
-export https_proxy=http://proxy.esl.cisco.com:80
-git clone https://github.com/tbachman/kolla-openstack.git
+On just the controller
+```yaml
+sh ./init-deployer.sh
+```
 
-# Enter the kolla-openstack playbooks directory
+Enter the kolla-openstack playbooks directory
+```yaml
 cd kolla-openstack/
+```
 
-# Update inventory/hosts.yml based on your hosts. The "deployment"
-# is the host you're using to run these playbooks from, while the
-# "controller" is where the server-side OpenStack services will run,
-# and the "compute_nodes" is where the hypervisor- and agnet-side
-# OpenStack services will run:
+Update inventory/hosts.yml based on your hosts. The "deployment"
+is the host you're using to run these playbooks from, while the
+"controller" is where the server-side OpenStack services will run,
+and the "compute_nodes" is where the hypervisor- and agnet-side
+OpenStack services will run (note: once you specify the 
+ansible_host and kolla_primary_interface_address for a host,
+you don't need to do it if it appears again - like kkolla01
+in the example below):
+```yaml
     deployment:
       hosts:
         kkolla01:
@@ -209,39 +207,44 @@ cd kolla-openstack/
         kkolla03:
           ansible_host: 172.25.235.202
           kolla_primary_interface_address: 172.25.235.202/24
+```
+
+Initially, you may need to change the following in inventory/group_vars/all.yml:
+* kolla_network_interface
+* kolla_internal_vip_address
+* kolla_primary_interface (gateway IP)
+* kolla_bond (if using a bond - need to set the subordinate interfaces names)
+* kolla_ndfc_config (update IP, credentials, and fabric name for your ND instance)
+
+If you're not using bonds, change this variable (configured in inventory/group_vars/all.yml):
+* kolla_netplan_bond_enabled: true
 
 
-# add hostnames for all the nodes:
+Edit your /etc/hosts to add hostnames for all the nodes:
+```yaml
 sudo vi /etc/hosts
+```
+Now run a script to set up passwordless ssh:
+```yaml
+for host in $(egrep kolla_primary_interface_address inventory/hosts.yml | awk '{print $NF}' | awk -F"/" '{print $1}'); do ssh-copy-id -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519.pub noiro@$host; done
+```
 
-# generate ssh key and copy it to each host
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
-ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla04
-ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla05
-ssh-copy-id -i ~/.ssh/id_ed25519.pub noiro@kkolla06
-
-# enable passowrdless sudo  on all hosts (run this on all hosts)
+Then enable passowrdless sudo on all hosts (run this on all hosts)
+```yaml
 echo 'noiro ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/90-ansible-noiro
 sudo chmod 440 /etc/sudoers.d/90-ansible-noiro
 sudo visudo -cf /etc/sudoers.d/90-ansible-noiro
+```
 
-Make sure you have bonding enabled if you're using bonds (configured in inventory/group_vars/all.yml):
-kolla_netplan_bond_enabled: true
 
-You may need to configure the networking parameters (including the bond) here:
-kolla_network_interface: enp1s0
-kolla_bond
-  name: bond0
-  mtu: 9000
-  interfaces:
-    - enp7s0
-    - enp8s0
 
-# now run the playbooks
+Now run the playbooks
+```yaml
 ansible-playbook playbooks/00-prepare-hosts.yml
 ansible-playbook playbooks/10-deployer-setup.yml
 ansible-playbook playbooks/20-configure-kolla.yml
 ansible-playbook playbooks/30-deploy.yml
+```
 
 At this point, you should have a deployed OpenStack cloud without the integration with ND.
 
@@ -257,16 +260,13 @@ Now set in inventory/group_vars/all.yml:
 
 And run the playbook to use the new ansible configuration and build the new images and configuration for the integration with ND:
 
+```yaml
 ansible-playbook playbooks/20-configure-kolla.yml
 ansible-playbook playbooks/40-cisco-ndfc.yml
-
-
-The playbook is missing the step that pushes the images to the compute nodes:
-sudo docker save kolla/neutron-cisco-topology-agent:20.3.0 | ssh kkolla05 'docker load'
-sudo docker save kolla/neutron-cisco-topology-agent:20.3.0 | ssh kkolla06 'docker load'
-
-I also have to fix the extension drivers config - the parameter in inventory/group_vars/all.yml isn't updateing /etc/kolla/globals.yml
+```
 
 Now re-run the OpenStack deploy playbook with the neutron tag to deploy the integration with ND:
 
+```yaml
 ansible-playbook playbooks/30-deploy.yml --tags neutron
+```

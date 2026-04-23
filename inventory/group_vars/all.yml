@@ -11,7 +11,6 @@ kolla_pip_wheelhouse: ""
 kolla_http_proxy: "http://proxy.esl.cisco.com:80"
 kolla_https_proxy: "http://proxy.esl.cisco.com:80"
 kolla_no_proxy_extra:
-  - 172.25.235.0/24
   - localhost
   - 127.0.0.1
 kolla_no_proxy: "{{ ((groups['all'] | default([])) + (groups['all'] | default([]) | map('extract', hostvars, 'ansible_host') | select('defined') | list) + kolla_no_proxy_extra) | unique }}"
@@ -97,8 +96,8 @@ kolla_enable_ovn: true
 kolla_enable_provider_networks: true
 kolla_neutron_physical_networks: physnet1
 kolla_neutron_network_vlan_ranges: physnet1:1:3900
-kolla_neutron_type_drivers: flat,vlan
-kolla_neutron_tenant_network_types: vlan
+kolla_neutron_type_drivers: geneve,gre,vlan,flat,local
+kolla_neutron_tenant_network_types: geneve,gre,vlan,flat,local
 #kolla_neutron_type_drivers: nd,geneve,gre,vlan,flat,local
 #kolla_neutron_tenant_network_types: nd,geneve,gre,vlan,flat,local
 
