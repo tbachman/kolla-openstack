@@ -45,7 +45,13 @@ neutron_subprojects:
     enabled: {{ item.enabled | bool | lower }}
 {% endfor %}
 
-enable_neutron_ndfc: true
+enable_neutron_segments: "{{ 'true' if kolla_enable_neutron_segments else 'false' }}"
+enable_neutron_trunk: "{{ 'true' if kolla_enable_neutron_trunk else 'false' }}"
+enable_neutron_metering: "{{ 'true' if kolla_enable_neutron_metering else 'false' }}"
+enable_neutron_bgp_dragent: "{{ 'true' if kolla_enable_neutron_bgp_dragent else 'false' }}"
+
+enable_neutron_ndfc: "{{ 'true' if kolla_enable_neutron_ndfc else 'false' }}"
+
 
 neutron_ndfc_config:
 {% for key, value in kolla_ndfc_config.items() %}

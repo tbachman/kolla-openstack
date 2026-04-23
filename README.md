@@ -1,12 +1,44 @@
-# OpenStack Kolla Playbooks
+# OpenStack Kolla-Ansible Installer Playbooks
 
-An Ansible project for deploying OpenStack Epoxy (`stable/2025.1`) with `kolla-ansible` on:
-
+This is a very opinionated, slightly configurable set of ansible playbooks for installing OpenStack using kolla-ansible.
+The "out of the box" deployment has:
 - `1` controller node
 - `2` compute nodes
-- the controller also acting as the deployment host
 
-## Layout
+The controller node also accts as the deployer node for kolla-ansible (which is the same host where these playbooks are installed and run).
+
+This deployment was tested using a singly server. The requirements for the server would ideally be:
+* 128GB RAM (preferably 256GB)
+* 1TB HDD (preferably 2TB)
+* 32 cores
+
+The server used for the testing had:
+* Ubuntu server 24.04
+* linux bridge (e.g. "cisco-br") to connect all VMs
+* extra NIC ports to use ass  pass-through interfaces for the VMs (allows direct connection of OpenStack compute hosts to the ND fabric)
+
+Here is a diagram of the 3 node setup, connected to the Linux Bridge:
+
+      +---------------------------------------------------------+
+      |                       Linux Bridge                      |
+      |                        (cisco-br)                       |
+      +---------------------------------------------------------+
+              |                  |                  |
+              |                  |                  |
+      +-------|-------+  +-------|-------+  +-------|-------+
+      |    [veth0]    |  |    [veth1]    |  |    [veth2]    |
+      |               |  |               |  |               |
+      |      VM       |  |      VM       |  |      VM       |
+      |   Controller  |  |   Compute 1   |  |   Compute 2   |
+      +---------------+  +---|-------|---+  +---|-------|---+
+                             |       |          |       |
+                          [eth1]   [eth2]    [eth1]   [eth2]
+                             |       |          |       |
+                             |       |          |       |
+
+                            ***** Nexus Dashboard Fabric ******
+
+## Repo Layout
 
 - `ansible.cfg`: local project Ansible defaults
 - `inventory/hosts.yml`: sample inventory with explicit `controller` and `compute_nodes` role groups
@@ -17,7 +49,6 @@ An Ansible project for deploying OpenStack Epoxy (`stable/2025.1`) with `kolla-a
 - `playbooks/20-configure-kolla.yml`: render `/etc/kolla/globals.yml` and `/etc/kolla/multinode`
 - `playbooks/30-deploy.yml`: run `install-deps`, `bootstrap-servers`, `prechecks`, `deploy`, and `post-deploy`
 - `playbooks/40-cisco-ndfc.yml`: optional Cisco `networking-cisco` overlay and image build preparation
-- `playbooks/site.yml`: baseline end-to-end entry point
 
 ## Assumptions
 
@@ -136,33 +167,6 @@ This project does not automatically distribute built images to compute nodes. Th
 - Sensitive values in `inventory/group_vars/all.yml` are placeholders and should be replaced before use.
 
 
-This is a very opinionated, slightly configurable set of playbooks to install OpenStack using kolla-ansible.
-
-Hypervisor:
-* Ubuntu server
-* create linux bridge to connect all VMs
-* have enough NIC ports on the hypervisor to support pass-through interfaces to the VMs used as compute nodes for OpenStack
-*
-You need to create 3 VMs:
-* Controller VM. This only needs a
-
-      +---------------------------------------------------------+
-      |                       Linux Bridge                      |
-      |                          (br0)                          |
-      +---------------------------------------------------------+
-              |                  |                  |
-              |                  |                  |
-      +-------|-------+  +-------|-------+  +-------|-------+
-      |    [veth0]    |  |    [veth1]    |  |    [veth2]    |
-      |               |  |               |  |               |
-      |      VM       |  |      VM       |  |      VM       |
-      |   Controller  |  |   Compute 1   |  |   Compute 2   |
-      +---------------+  +---|-------|---+  +---|-------|---+
-                             |       |          |       |
-                          [eth1]   [eth2]    [eth1]   [eth2]
-                             |       |          |       |
-                             |       |          |       |
-
 
 Initially, you'll need to change the following in inventory/group_vars/all.yml:
 * kolla_no_proxy_extra:
@@ -174,11 +178,14 @@ You'll also need to change the hosts, IPs, and `controller` / `compute_nodes` ro
 Here are the commands that I had to run on the controller:
 
 # on just the controller
+sh ./bootstrap-deployer.sh
 sudo -E apt install git -y
 sudo -E apt install vim -y
 sudo -E apt install ansible -y
 export https_proxy=http://proxy.esl.cisco.com:80
 git clone https://github.com/tbachman/kolla-openstack.git
+
+# Enter the kolla-openstack playbooks directory
 cd kolla-openstack/
 
 # Update inventory/hosts.yml based on your hosts. The "deployment"
@@ -255,7 +262,8 @@ ansible-playbook playbooks/40-cisco-ndfc.yml
 
 
 The playbook is missing the step that pushes the images to the compute nodes:
-docker save kolla/neutron-cisco-topology-agent:20.3.0 | ssh kkolla05 'docker load'
+sudo docker save kolla/neutron-cisco-topology-agent:20.3.0 | ssh kkolla05 'docker load'
+sudo docker save kolla/neutron-cisco-topology-agent:20.3.0 | ssh kkolla06 'docker load'
 
 I also have to fix the extension drivers config - the parameter in inventory/group_vars/all.yml isn't updateing /etc/kolla/globals.yml
 

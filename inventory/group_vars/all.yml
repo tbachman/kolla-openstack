@@ -26,7 +26,7 @@ kolla_enable_haproxy: true
 kolla_manage_netplan: true
 kolla_netplan_file: /etc/netplan/01-kolla.yaml
 kolla_netplan_renderer: networkd
-kolla_netplan_bond_enabled: false
+kolla_netplan_bond_enabled: true
 kolla_primary_interface:
   name: "{{ kolla_network_interface }}"
   gateway: 172.25.235.1
@@ -63,6 +63,7 @@ kolla_common_packages:
   - curl
   - jq
   - iputils-ping
+  - net-tools
   - chrony
   - ca-certificates
   - apt-transport-https
@@ -73,6 +74,11 @@ kolla_common_packages:
   - python3-docker
   - docker.io
 
+kolla_enable_neutron_ndfc: true
+kolla_enable_neutron_segments: true
+kolla_enable_neutron_trunk: true
+kolla_enable_neutron_metering: true
+kolla_enable_neutron_bgp_dragent: true
 kolla_enable_keystone: true
 kolla_enable_glance: true
 kolla_enable_nova: true
@@ -110,10 +116,10 @@ kolla_admin_openrc_mode: "0644"
 kolla_enable_cisco_ndfc: true
 kolla_cisco_build_images: false
 #kolla_cisco_build_images: true
-#kolla_docker_registry_login_enabled: false
-#kolla_docker_registry: ""
-#kolla_docker_registry_username: ""
-#kolla_docker_registry_password: ""
+kolla_docker_registry_login_enabled: false
+kolla_docker_registry: ""
+kolla_docker_registry_username: ""
+kolla_docker_registry_password: ""
 kolla_neutron_server_image: kolla/neutron-server
 kolla_neutron_server_tag: "20.3.0"
 kolla_neutron_cisco_topology_agent_image: kolla/neutron-cisco-topology-agent
@@ -122,8 +128,8 @@ kolla_neutron_subprojects:
   - name: networking-cisco
     enabled: true
 kolla_neutron_mechanism_drivers:
-  - name: ovn
   - name: ndfc
+  - name: ovn
   - name: logger
 kolla_neutron_extension_drivers:
   - name: port_security
