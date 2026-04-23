@@ -33,7 +33,7 @@ enable_cinder: "{{ 'yes' if kolla_enable_cinder else 'no' }}"
 enable_ironic: "{{ 'yes' if kolla_enable_ironic else 'no' }}"
 enable_ironic_dnsmasq: "{{ 'yes' if kolla_enable_ironic_dnsmasq else 'no' }}"
 enable_octavia: "{{ 'yes' if kolla_enable_octavia else 'no' }}"
-{% if kolla_enable_cisco_ndfc %}
+{% if kolla_enable_neutron_ndfc %}
 
 enable_neutron_cisco_topology_agent: "yes"
 neutron_cisco_topology_agent_image: "{{ kolla_neutron_cisco_topology_agent_image }}"
@@ -50,7 +50,7 @@ enable_neutron_trunk: "{{ 'true' if kolla_enable_neutron_trunk else 'false' }}"
 enable_neutron_metering: "{{ 'true' if kolla_enable_neutron_metering else 'false' }}"
 enable_neutron_bgp_dragent: "{{ 'true' if kolla_enable_neutron_bgp_dragent else 'false' }}"
 
-enable_neutron_ndfc: "{{ 'true' if kolla_enable_neutron_ndfc else 'false' }}"
+enable_neutron_ndfc: true
 
 
 neutron_ndfc_config:
